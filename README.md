@@ -42,9 +42,18 @@ The repeating pattern used for projection is:
 3 work days → 2 off → 2 work days → 3 off → 2 work days → 2 off → (repeat)
 ```
 
-This matches the regular blocks that appear from late September onward (Fri–Sun / Wed–Thu / Mon–Tue style).
-
 When you later learn the real shift for a projected day, just add (or edit) the row in the CSV with the correct title. The generator prefers the CSV value over the automatic `SA`.
+
+---
+
+## Shift titles & times
+
+| Code in CSV | Title shown     | Time                          |
+|-------------|-----------------|-------------------------------|
+| 1           | Connor 1        | 7:00 AM – 7:00 PM             |
+| 2           | Connor 2        | 7:00 PM – 7:00 AM (overnight) |
+| F12         | Connor F12      | 12:00 PM – 12:00 AM (overnight) |
+| SA          | Connor SA       | All-day                       |
 
 ---
 
@@ -59,7 +68,7 @@ When you later learn the real shift for a projected day, just add (or edit) the 
    2026-11-03,1
    ```
    - Date: `YYYY-MM-DD` (preferred) or `MM/DD/YYYY`
-   - Shift: whatever title you want shown (`1`, `2`, `F12`, `SA`, etc.)
+   - Shift: `1`, `2`, `F12`, or `SA`
 
 2. Run the generator (locally or via GitHub Actions):
    ```bash
@@ -74,9 +83,7 @@ Subscribers will pick up the changes on their next refresh.
 
 ## Notes
 
-- Events are all-day.
-- Titles are taken exactly from the Shift column (or `SA` for projected days).
-- The feed is public. Anyone with the URL can view it — keep sensitive details out of the titles.
-- The automatic projection can be turned off or adjusted by editing `scripts/generate_ics.py` (look for `PROJECT_MONTHS` and the `generate_sa_projection` function).
+- The feed is public. Anyone with the URL can view it.
+- The automatic projection can be adjusted in `scripts/generate_ics.py`.
 
 Generated with a simple Python script so you stay in full control.
