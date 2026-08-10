@@ -4,86 +4,52 @@ Public iCalendar (ICS) feed of my work schedule for easy subscription in Apple C
 
 ## Subscribe
 
-**Direct ICS URL (recommended for Apple Calendar):**
+**Direct ICS URL:**
 
 ```
 https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME/main/public/calendar.ics
 ```
 
-Replace `YOUR_GITHUB_USERNAME` and `YOUR_REPO_NAME` with your actual values after you push this repo.
-
 ### Apple Calendar (iPhone / iPad)
-1. Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar
-2. Paste the URL above
-3. Tap Next → Save
-4. (Optional) Set a custom name/color and choose Refresh frequency
-
-Or in the Calendar app (newer iOS): Calendars → Add Calendar → Add Subscription Calendar.
+Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar → paste the URL
 
 ### Apple Calendar (Mac)
-1. Calendar app → File → New Calendar Subscription…
-2. Paste the URL → Subscribe
-3. Set name, color, Location = **iCloud** (so it appears on all your devices)
-4. Choose Auto-refresh (Hourly is usually good)
+Calendar → File → New Calendar Subscription… → paste the URL → set Location to **iCloud**
 
-### Google Calendar / others
-Add by URL using the same link.
+---
+
+## Shift titles (all events are all-day)
+
+| Code in CSV | Title shown on calendar          |
+|-------------|----------------------------------|
+| 1           | Connor 1 (7am–7pm)               |
+| 2           | Connor 2 (7pm–7am)               |
+| F12         | Connor F12 (12pm–12am)           |
+| SA          | Connor SA                        |
+
+Each shift appears on **one single day** only. The hours are included in the title so the information is still visible without the event spanning two days.
 
 ---
 
 ## How the schedule is built
 
-1. **Known shifts** come from `data/schedule.csv` (exactly as you write them).
-2. **Future projection** — after the last date in the CSV the script automatically continues the observed 14-day repeating pattern for the next 12 months and labels those days `SA`.
+1. Known shifts come from `data/schedule.csv`
+2. After the last date in the CSV the script automatically continues the 14-day pattern for the next 12 months as `SA`
 
-The repeating pattern used for projection is:
-
+Pattern used for projection:
 ```
-3 work days → 2 off → 2 work days → 3 off → 2 work days → 2 off → (repeat)
+3 work → 2 off → 2 work → 3 off → 2 work → 2 off → (repeat)
 ```
 
-When you later learn the real shift for a projected day, just add (or edit) the row in the CSV with the correct title. The generator prefers the CSV value over the automatic `SA`.
-
 ---
 
-## Shift titles & times
+## How to update
 
-| Code in CSV | Title shown     | Time                          |
-|-------------|-----------------|-------------------------------|
-| 1           | Connor 1        | 7:00 AM – 7:00 PM             |
-| 2           | Connor 2        | 7:00 PM – 7:00 AM (overnight) |
-| F12         | Connor F12      | 12:00 PM – 12:00 AM (overnight) |
-| SA          | Connor SA       | All-day                       |
+1. Edit `data/schedule.csv`
+2. Push the change
+3. The GitHub Action automatically regenerates `public/calendar.ics`
 
----
-
-## How to update the schedule
-
-1. Edit `data/schedule.csv`  
-   Format is simple:
-   ```csv
-   Date,Shift
-   2026-08-11,1
-   2026-10-25,2
-   2026-11-03,1
-   ```
-   - Date: `YYYY-MM-DD` (preferred) or `MM/DD/YYYY`
-   - Shift: `1`, `2`, `F12`, or `SA`
-
-2. Run the generator (locally or via GitHub Actions):
-   ```bash
-   python scripts/generate_ics.py
-   ```
-
-3. Commit and push both the CSV and the updated `public/calendar.ics`.
-
-Subscribers will pick up the changes on their next refresh.
-
----
-
-## Notes
-
-- The feed is public. Anyone with the URL can view it.
-- The automatic projection can be adjusted in `scripts/generate_ics.py`.
-
-Generated with a simple Python script so you stay in full control.
+You can also run it manually:
+```bash
+python scripts/generate_ics.py
+```
