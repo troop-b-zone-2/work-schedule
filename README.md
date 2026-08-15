@@ -1,55 +1,71 @@
 # Work Schedule Calendar
 
-Public iCalendar (ICS) feed of my work schedule for easy subscription in Apple Calendar, Google Calendar, Outlook, etc.
+Public iCalendar (ICS) feed of my work schedule.
 
-## Subscribe
-
-**Direct ICS URL:**
-
+**ICS URL (after you push to GitHub):**
 ```
-https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME/main/public/calendar.ics
-```
-
-### Apple Calendar (iPhone / iPad)
-Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar → paste the URL
-
-### Apple Calendar (Mac)
-Calendar → File → New Calendar Subscription… → paste the URL → set Location to **iCloud**
-
----
-
-## Shift titles (all events are all-day)
-
-| Code in CSV | Title shown on calendar          |
-|-------------|----------------------------------|
-| 1           | Connor 1 (7am–7pm)               |
-| 2           | Connor 2 (7pm–7am)               |
-| F12         | Connor F12 (12pm–12am)           |
-| SA          | Connor SA                        |
-
-Each shift appears on **one single day** only. The hours are included in the title so the information is still visible without the event spanning two days.
-
----
-
-## How the schedule is built
-
-1. Known shifts come from `data/schedule.csv`
-2. After the last date in the CSV the script automatically continues the 14-day pattern for the next 12 months as `SA`
-
-Pattern used for projection:
-```
-3 work → 2 off → 2 work → 3 off → 2 work → 2 off → (repeat)
+https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/public/calendar.ics
 ```
 
 ---
 
-## How to update
+## How to update the schedule (easiest method)
 
-1. Edit `data/schedule.csv`
-2. Push the change
-3. The GitHub Action automatically regenerates `public/calendar.ics`
+1. Copy the HTML row(s) from the scheduling website (the ones that look like `<tr groupid=...>` with the `title="GOTHAM, CONNOR B ... Shift: X"` attributes).
+2. Go to your GitHub repository → **Issues** → **New issue**.
+3. Paste the HTML into the issue body.
+4. Title can be anything (e.g. `Update Schedule`).
+5. Click **Submit new issue**.
 
-You can also run it manually:
+The Action will automatically:
+- Extract all working shifts (`1`, `2`, `F12`, etc.)
+- Ignore Pass Days
+- Update `data/schedule.csv`
+- Regenerate `public/calendar.ics`
+- Commit the changes
+- Close the issue and leave a success comment
+
+That’s it. Subscribers will see the new shifts on their next calendar refresh.
+
+---
+
+## Shift titles (all-day events)
+
+| Code | Title on calendar              |
+|------|--------------------------------|
+| 1    | Connor 1 (7am–7pm)             |
+| 2    | Connor 2 (7pm–7am)             |
+| F12  | Connor F12 (12pm–12am)         |
+| SA   | Connor SA (projected future)   |
+
+---
+
+## Manual methods (if needed)
+
+### Edit the CSV directly
+Edit `data/schedule.csv` and push. The original “Generate ICS” workflow will rebuild the calendar.
+
+### Run locally
 ```bash
+python scripts/parse_issue_and_update.py   # if you have HTML
 python scripts/generate_ics.py
 ```
+
+---
+
+## Files
+
+- `data/schedule.csv` – source of truth
+- `public/calendar.ics` – the public feed
+- `scripts/generate_ics.py` – builds the ICS (includes 12-month SA projection)
+- `scripts/parse_issue_and_update.py` – parses the HTML from Issues
+- `.github/workflows/update-from-issue.yml` – the automatic Issue → calendar workflow
+- `.github/workflows/generate-ics.yml` – rebuilds ICS when the CSV changes
+
+---
+
+## First-time setup reminders
+
+1. Make sure **Actions** are enabled (Settings → Actions → General → Allow all actions).
+2. Set **Workflow permissions** to **Read and write permissions**.
+3. The first time you open an Issue with schedule HTML, the workflow should appear in the Actions tab.
