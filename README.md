@@ -9,23 +9,24 @@ https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/public/calendar.i
 
 ---
 
-## How to update the schedule (easiest method)
+## How to update the schedule
 
-1. Copy the HTML row(s) from the scheduling website (the ones that look like `<tr groupid=...>` with the `title="GOTHAM, CONNOR B ... Shift: X"` attributes).
+1. Copy one or more HTML `<tr>` rows from the scheduling website.
 2. Go to your GitHub repository → **Issues** → **New issue**.
-3. Paste the HTML into the issue body.
+3. Paste the HTML into the issue body (you can paste multiple months at once).
 4. Title can be anything (e.g. `Update Schedule`).
 5. Click **Submit new issue**.
 
-The Action will automatically:
+The Action will:
 - Extract all working shifts (`1`, `2`, `F12`, etc.)
 - Ignore Pass Days
-- Update `data/schedule.csv`
-- Regenerate `public/calendar.ics`
-- Commit the changes
-- Close the issue and leave a success comment
+- **Completely replace** the schedule for the date range covered by the new data  
+  (any old shifts inside that range that are no longer present get removed)
+- Keep any shifts that fall outside the new date range
+- Regenerate the calendar feed
+- Close the issue with a success comment
 
-That’s it. Subscribers will see the new shifts on their next calendar refresh.
+This keeps the calendar current based on the most recently pasted data.
 
 ---
 
@@ -40,32 +41,10 @@ That’s it. Subscribers will see the new shifts on their next calendar refresh.
 
 ---
 
-## Manual methods (if needed)
+## First-time setup
 
-### Edit the CSV directly
-Edit `data/schedule.csv` and push. The original “Generate ICS” workflow will rebuild the calendar.
-
-### Run locally
-```bash
-python scripts/parse_issue_and_update.py   # if you have HTML
-python scripts/generate_ics.py
-```
-
----
-
-## Files
-
-- `data/schedule.csv` – source of truth
-- `public/calendar.ics` – the public feed
-- `scripts/generate_ics.py` – builds the ICS (includes 12-month SA projection)
-- `scripts/parse_issue_and_update.py` – parses the HTML from Issues
-- `.github/workflows/update-from-issue.yml` – the automatic Issue → calendar workflow
-- `.github/workflows/generate-ics.yml` – rebuilds ICS when the CSV changes
-
----
-
-## First-time setup reminders
-
-1. Make sure **Actions** are enabled (Settings → Actions → General → Allow all actions).
-2. Set **Workflow permissions** to **Read and write permissions**.
-3. The first time you open an Issue with schedule HTML, the workflow should appear in the Actions tab.
+1. Upload the files from this folder to your GitHub repo.
+2. Settings → Actions → General:
+   - Allow all actions
+   - Workflow permissions → **Read and write permissions**
+3. Create a test Issue with some HTML to verify it works.

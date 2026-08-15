@@ -2,9 +2,11 @@
 """
 Parse HTML schedule rows from a GitHub Issue body and update data/schedule.csv.
 
-Looks for title="... Date ... Shift: X" patterns.
-Ignores "Pass Day".
-Merges new dates into the existing CSV (overwrites if the date already exists).
+- You can paste multiple <tr> rows at once (multiple months is fine).
+- Pass Days are ignored.
+- The newest paste completely replaces the schedule for the date range it covers.
+  Any previous entries that fall inside that range but are missing from the new
+  data are removed. Entries outside the range are kept.
 """
 
 from datetime import datetime
@@ -17,8 +19,6 @@ import sys
 ROOT = Path(__file__).resolve().parent.parent
 CSV_PATH = ROOT / "data" / "schedule.csv"
 
-# Matches the title attribute content that contains a date and "Shift: ..."
-# Handles newlines inside the attribute value.
 TITLE_PATTERN = re.compile(
     r'title\s*=\s*"([^"]*?)"',
     re.IGNORECASE | re.DOTALL
@@ -43,10 +43,8 @@ def normalize_shift(raw: str) -> str | None:
     s = raw.strip().upper()
     if s in ("PASS DAY", "PASS", "-", "OFF", ""):
         return None
-    # Keep common codes as-is
     if s in ("1", "2", "F12", "SA"):
         return s
-    # Allow other numeric or short codes
     if re.match(r'^[0-9A-Z]{1,6}$', s):
         return s
     return None
@@ -80,7 +78,6 @@ def load_existing_csv() -> dict[str, str]:
 
 def write_csv(data: dict[str, str]):
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-    # Sort by date
     sorted_items = sorted(data.items(), key=lambda x: x[0])
     with open(CSV_PATH, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -89,7 +86,6 @@ def write_csv(data: dict[str, str]):
             writer.writerow([date, shift])
 
 def main():
-    # Issue body can come from env (GitHub Action) or stdin
     body = os.environ.get("ISSUE_BODY", "")
     if not body and not sys.stdin.isatty():
         body = sys.stdin.read()
@@ -103,16 +99,36 @@ def main():
         print("No valid shifts found in the issue body (Pass Days are ignored).")
         sys.exit(2)
 
-    print(f"Found {len(new_shifts)} working shifts:")
+    print(f"Found {len(new_shifts)} working shifts in the new data:")
     for d, s in sorted(new_shifts.items()):
         print(f"  {d} → {s}")
 
-    existing = load_existing_csv()
-    # New data overwrites existing dates
-    existing.update(new_shifts)
-    write_csv(existing)
+    # Determine the date range covered by this paste
+    dates = sorted(new_shifts.keys())
+    range_start = dates[0]
+    range_end = dates[-1]
+    print(f"\nDate range of this update: {range_start} → {range_end}")
 
-    print(f"\nUpdated {CSV_PATH} — total entries: {len(existing)}")
+    existing = load_existing_csv()
+
+    # Keep only entries that are OUTSIDE the new range
+    kept = {
+        d: s for d, s in existing.items()
+        if d < range_start or d > range_end
+    }
+
+    removed_count = len(existing) - len(kept)
+    if removed_count > 0:
+        print(f"Removed {removed_count} previous entries that fell inside this range.")
+
+    # Add the new shifts (this fully replaces the range)
+    kept.update(new_shifts)
+    write_csv(kept)
+
+    print(f"\nUpdated {CSV_PATH}")
+    print(f"  Total entries now: {len(kept)}")
+    print(f"  Kept outside range: {len(kept) - len(new_shifts)}")
+    print(f"  New/updated in range: {len(new_shifts)}")
 
 if __name__ == "__main__":
     main()
