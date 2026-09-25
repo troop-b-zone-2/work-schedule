@@ -29,6 +29,12 @@ DATE_SHIFT_PATTERN = re.compile(
     re.IGNORECASE | re.DOTALL
 )
 
+# Catch SA cells even when title says "Pass Day" + "On Special Assignment"
+SA_CELL_PATTERN = re.compile(
+    r'title="[^"]*?(\d{1,2}/\d{1,2}/\d{4})[^"]*?(?:On Special Assignment|Special Assignment)[^"]*?"[^>]*>\s*SA\s*</a>',
+    re.IGNORECASE | re.DOTALL
+)
+
 def parse_date(s: str) -> datetime:
     s = s.strip()
     for fmt in ("%m/%d/%Y", "%m/%d/%y", "%Y-%m-%d"):
@@ -41,17 +47,28 @@ def parse_date(s: str) -> datetime:
 def normalize_shift(raw: str) -> str | None:
     """Return normalized shift code or None if it should be ignored."""
     s = raw.strip().upper()
+
+    # SA indicators (handles "Pass Day\nOn Special Assignment" and "1-6\nOn Special Assignment")
+    if "SPECIAL ASSIGNMENT" in s or s == "SA":
+        return "SA"
+
     if s in ("PASS DAY", "PASS", "-", "OFF", ""):
         return None
+
     if s in ("1", "2", "F12", "SA"):
         return s
-    if re.match(r'^[0-9A-Z]{1,6}$', s):
+
+    # Allow simple codes like 1-6, F12, etc.
+    if re.match(r'^[0-9A-Z\-]{1,8}$', s):
         return s
+
     return None
 
 def extract_shifts(html: str) -> dict[str, str]:
     """Return {YYYY-MM-DD: shift_code} from the pasted HTML."""
     results = {}
+
+    # Primary: parse every title attribute
     for title_match in TITLE_PATTERN.finditer(html):
         title_content = title_match.group(1)
         for m in DATE_SHIFT_PATTERN.finditer(title_content):
@@ -64,6 +81,17 @@ def extract_shifts(html: str) -> dict[str, str]:
                     results[iso] = shift
             except ValueError:
                 continue
+
+    # Secondary: catch SA cells that the title parser missed
+    for m in SA_CELL_PATTERN.finditer(html):
+        date_str = m.group(1)
+        try:
+            dt = parse_date(date_str)
+            iso = dt.strftime("%Y-%m-%d")
+            results[iso] = "SA"          # force SA
+        except ValueError:
+            continue
+
     return results
 
 def load_existing_csv() -> dict[str, str]:
